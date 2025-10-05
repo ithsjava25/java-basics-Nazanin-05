@@ -18,6 +18,7 @@ public class Main {
             System.out.println("Usage: --zone SE1|SE2|SE3|SE4 [--date YYYY-MM-DD] [--sorted] [--charging 2h|4h|8h] [--help]");
             return;
         }
+
         ElpriserAPI elpriserAPI = new ElpriserAPI();
 
         String zone = "";
