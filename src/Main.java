@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Arrays;
 import java.util.List;
-import java.text.NumberFormat;
-import java.util.Locale;
 
 public class Main {
     public static void main(String[] args) {
@@ -18,19 +16,14 @@ public class Main {
             System.out.println("Usage: --zone SE1|SE2|SE3|SE4 [--date YYYY-MM-DD] [--sorted] [--charging 2h|4h|8h] [--help]");
             return;
         }
-
         ElpriserAPI elpriserAPI = new ElpriserAPI();
+        ElpriserAPI.Prisklass prisklass;
 
         String zone = "";
         LocalDate date = LocalDate.now();
         List<ElpriserAPI.Elpris> priser = new ArrayList<>();
         boolean sortedRequested = false;
         boolean helpRequested = false;
-
-        // NumberFormat för svenska decimaltal
-        NumberFormat nf = NumberFormat.getNumberInstance(Locale.of("sv", "SE"));
-        nf.setMinimumFractionDigits(2);
-        nf.setMaximumFractionDigits(2);
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -84,6 +77,7 @@ public class Main {
                 return;
             }
 
+
             if (!priser.isEmpty()) {
 
                 ElpriserAPI.Elpris minPris = priser.get(0);
@@ -98,15 +92,15 @@ public class Main {
                 }
                 double medelPris = sumPris / priser.size();
 
-                System.out.println("Lägsta pris: " + nf.format(minPris.sekPerKWh() * 100)
+                System.out.println("Lägsta pris: "
+                        + String.format("%.2f", minPris.sekPerKWh() * 100).replace('.', ',')
                         + " öre (" + String.format("%02d", minPris.timeStart().getHour())
                         + "-" + String.format("%02d", minPris.timeEnd().getHour()) + ")");
 
-                System.out.println("Högsta pris: " + nf.format(maxPris.sekPerKWh() * 100)
+                System.out.println("Högsta pris: "
+                        + String.format("%.2f", maxPris.sekPerKWh() * 100).replace('.', ',')
                         + " öre (" + String.format("%02d", maxPris.timeStart().getHour())
                         + "-" + String.format("%02d", maxPris.timeEnd().getHour()) + ")");
-
-                System.out.println("Medelpris: " + nf.format(medelPris * 100) + " öre");
 
                 System.out.println("Medelpris: "
                         + (Math.round(medelPris * 1000) / 10.0)
@@ -118,7 +112,7 @@ public class Main {
 
                     for (ElpriserAPI.Elpris p : sortedPriser) {
                         String timeRange = String.format("%02d-%02d", p.timeStart().getHour(), p.timeEnd().getHour());
-                        String priceOre = nf.format(p.sekPerKWh() * 100); // NYTT
+                        String priceOre = String.format("%.2f", p.sekPerKWh() * 100).replace('.', ',');
                         System.out.println(timeRange + " " + priceOre + " öre");}
                 }
 
@@ -133,11 +127,9 @@ public class Main {
                 for (int j = 0; j < args.length; j++) {
                     if ("--charging".equals(args[j]) && j + 1 < args.length) {
                         String val = args[j + 1].toLowerCase();
-                        switch (val) {
-                            case "2h" -> windowHours = 2;
-                            case "4h" -> windowHours = 4;
-                            case "8h" -> windowHours = 8;
-                        }
+                        if (val.equals("2h")) windowHours = 2;
+                        else if (val.equals("4h")) windowHours = 4;
+                        else if (val.equals("8h")) windowHours = 8;
                     }
                 }
 
@@ -150,7 +142,6 @@ public class Main {
                     List<ElpriserAPI.Elpris> nextDayPrices = elpriserAPI.getPriser(date.plusDays(1), ElpriserAPI.Prisklass.valueOf(zone));
                     allPrices.addAll(nextDayPrices);
                 } catch (IllegalArgumentException e) {
-                    // Fångar undantag medvetet, eftersom vi bara vill fortsätta med befintliga priser
 
                 }
 
@@ -172,7 +163,6 @@ public class Main {
                 ElpriserAPI.Elpris start = allPrices.get(startIndex);
                 ElpriserAPI.Elpris end = allPrices.get(startIndex + windowHours - 1);
 
-                if (allPrices.size() >= startIndex + windowHours) {
                 String startTime = String.format("%02d:%02d", start.timeStart().getHour(), start.timeStart().getMinute());
                 String endTime = String.format("%02d:%02d", end.timeEnd().getHour(), end.timeEnd().getMinute());
 
@@ -181,10 +171,12 @@ public class Main {
 
 
                 System.out.println("Påbörja laddning kl " + startTime);
-
-                    double windowMean = minTotal / windowHours; // medelpris i öre
+                double windowMean = minTotal / windowHours; // Medelpris i öre
                 String windowMeanStr = String.format("%.2f", windowMean).replace('.', ',');
                 System.out.println("Medelpris för fönster: " + windowMeanStr + " öre");
-                }}
+
+            }
+
+
         }
     } }
